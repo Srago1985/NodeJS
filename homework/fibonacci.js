@@ -1,11 +1,17 @@
-function* fibonacciIterator() {
+function fibonacciIterator() {
     let a = 0;
     let b = 1;
 
-    while (true) {
-        yield a;
-        [a, b] = [b, a + b];
-    }
+    return {
+        next: function() {
+            const value = a;
+            [a, b] = [b, a + b];
+            return { value, done: false };
+        },
+        [Symbol.iterator]: function() {
+            return this;
+        }
+    };
 }
 
 export function fibonacci(n) {
