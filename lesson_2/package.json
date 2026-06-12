@@ -1,0 +1,23 @@
+{
+  "name": "lesson_2",
+  "version": "1.0.0",
+  "description": "unit tests",
+  "keywords": [
+    "ls2"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Srago1985/NodeJS.git"
+  },
+  "license": "ISC",
+  "author": "Srago",
+  "type": "module",
+  "main": "index.js",
+  "scripts": {
+    "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js",
+    "start": "node iterator/range.js"
+  },
+  "devDependencies": {
+    "jest": "^30.4.2"
+  }
+}
