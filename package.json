@@ -1,0 +1,29 @@
+{
+  "name": "lesson_4",
+  "version": "1.0.0",
+  "description": "streams, events",
+  "keywords": [
+    "stream",
+    "event"
+  ],
+  "license": "ISC",
+  "author": "Srago",
+  "type": "module",
+  "scripts": {
+    "test": "test",
+    "events": "node events/events.js",
+    "path_cjs": "node etc/path.cjs",
+    "path_mjs": "node etc/path.mjs",
+    "system": "node etc/system.js",
+    "process": "node etc/process.js",
+    "read_employees": "node stream/employees.js",
+    "homework": "node homework/homework.js"
+  },
+  "dependencies": {
+    "cross-env": "^10.1.0",
+    "date-fns": "^4.4.0"
+  },
+  "devDependencies": {
+    "dotenv": "^17.4.2"
+  }
+}
