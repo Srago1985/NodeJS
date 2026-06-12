@@ -1,0 +1,21 @@
+{
+  "name": "lesson_3",
+  "version": "1.0.0",
+  "description": "file system",
+  "homepage": "https://github.com/Srago1985/lesson3-NodeJS#readme",
+  "bugs": {
+    "url": "https://github.com/Srago1985/lesson3-NodeJS/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Srago1985/lesson3-NodeJS.git"
+  },
+  "license": "ISC",
+  "author": "Srago",
+  "type": "module",
+  "main": "index.js",
+  "scripts": {
+    "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js",
+    "start": "node files.js"
+  }
+}
