@@ -1,0 +1,24 @@
+{
+  "name": "lesson_5",
+  "version": "1.0.0",
+  "description": "http server example",
+  "main": "index.js",
+  "scripts": {
+    "dev": "cross-env NODE_ENV=development nodemon http-text.js",
+    "hw5": "cross-env NODE_ENV=development nodemon homework5/hw5.js"
+  },
+  "keywords": [
+    "http",
+    "server"
+  ],
+  "author": "Srago",
+  "license": "ISC",
+  "type": "module",
+  "dependencies": {
+    "cross-env": "^10.1.0"
+  },
+  "devDependencies": {
+    "dotenv": "^17.4.2",
+    "nodemon": "^3.1.14"
+  }
+}
