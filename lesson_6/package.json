@@ -1,0 +1,22 @@
+{
+  "name": "lesson_6",
+  "version": "1.0.0",
+  "description": "server handle json",
+  "main": "index.js",
+  "scripts": {
+    "server": "cross-env NODE_ENV=development nodemon server-json.js",
+    "server-express": "cross-env NODE_ENV=development nodemon server-express.js"
+  },
+  "keywords": ["json"],
+  "author": "Srago",
+  "license": "ISC",
+  "type": "module",
+  "dependencies": {
+    "cross-env": "^10.1.0",
+    "express": "^4.18.2"
+  },
+  "devDependencies": {
+    "dotenv": "^17.4.2",
+    "nodemon": "^3.1.14"
+  }
+}
