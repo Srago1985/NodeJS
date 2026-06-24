@@ -1,48 +1,90 @@
 import Student from '../model/student.js'
+import { getDb } from '../db.js';
 
-const students = new Map();
+export const getStudentsCollection = () => {
+    return getDb().collection('students');
+}
 
-export const createStudent = ({id, name, password}) => {
+export const createStudent = async ({ id, name, password }) => {
+    const collection = getStudentsCollection();
     const numericId = +id;
-    if (!Number.isFinite(numericId) || students.has(numericId)) {
+
+    if (!Number.isFinite(numericId)) {
         return false;
     }
+
+    const existingStudent = await collection.findOne({ id: numericId });
+    if (existingStudent) {
+        return false;
+    }
+
     const student = new Student(numericId, name, password);
-    students.set(numericId, student);
+    await collection.insertOne(student);
     return true;
 } 
 
-export const findStudentByID = (id) => {
-    return students.get(+id);
+export const findStudentByID = async(id) => {
+    const collection = getStudentsCollection();
+    return collection.findOne({ id: +id }, { projection: { _id: 0 } });
+    
 }
 
-export const deleteStudentByID = (id) => {
-    let student = students.get(+id);
-    students.delete(+id);
-    return student; 
+export const deleteStudentByID = async (id) => {
+    const collection = getStudentsCollection();
+    const student = await collection.findOne({ id: +id }, { projection: { _id: 0 } });
+
+    if (!student) {
+        return null;
+    }
+
+    await collection.deleteOne({ id: +id });
+    return student;
 }
 
-export const updateStudentByID = (id, data) => {
-    let student = students.get(+id);
-    if (student) {
-        student = { ...student, ...data, id: +id };
-        students.set(+id, student);
-        return student;
-    } 
+export const updateStudentByID = async(id, data) => {
+    const collection = getStudentsCollection();
+    const student = await collection.findOne({ id: +id });
+
+    if (!student) {
+        return null;
+    }
+
+    const updatedStudent = { ...student, ...data, id: +id };
+    const { _id, ...dataToSave } = updatedStudent;
+
+    await collection.updateOne(
+        { id: +id },
+        { $set: dataToSave }
+    );
+
+    return dataToSave;
 }
 
-export const findStudentsByName = (name) => {
-    return [...students.values()].filter(student => student.name.toLowerCase() === name.toLowerCase());
+export const findStudentsByName = async (name) => {
+    const collection = getStudentsCollection();
+    const students = await collection.find({}, { projection: { _id: 0 } }).toArray();
+    return students.filter(student => student.name.toLowerCase() === name.toLowerCase());
 }
 
-export const countStudentsByNames = (names = []) => {
-    const lower = names.map(n => n.toLowerCase());
-    return [...students.values()].filter(s => lower.includes(s.name.toLowerCase())).length;
+export const countStudentsByNames = async (names = []) => {    
+    const collection = getStudentsCollection();
+    const students = await collection.find({}, { projection: { _id: 0 } }).toArray();
+    if (!Array.isArray(names)) {
+        names = String(names)
+            .split(',')
+            .map(name => name.trim())
+            .filter(Boolean);
+    }
+
+    const lower = names.map(name => name.toLowerCase());
+    return students.filter(student => lower.includes(student.name.toLowerCase())).length;
 }
 
-export const findStudentsByMinScore = (exam, minScore) => {
-    return [...students.values()].filter(student => {
+export const findStudentsByMinScore = async (exam, minScore) => {
+    const collection = getStudentsCollection();
+    const students = await collection.find({}, { projection: { _id: 0 } }).toArray();
+    return students.filter(student => {
         const score = student.scores[exam];
-        return score !== undefined && score >= minScore;
+        return score !== undefined && score >= +minScore;
     });
 }
