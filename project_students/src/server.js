@@ -1,7 +1,8 @@
 import express from 'express';
 import dotenv from 'dotenv';
 import router from './routes/students_routes.js';
-import { connectToMongo } from './db.js';
+import { connectToMongoose } from './db.mongoose.js';
+
 
 dotenv.config();
 const PORT = process.env.PORT || 3000;
@@ -16,13 +17,14 @@ app.use((req, res) => {
 });
 
 try {
-    await connectToMongo();
-    console.log('MongoDB connected');
+    await connectToMongoose();
+    
+    console.log('Mongoose connected');
 
     app.listen(PORT, () => {
         console.log(`Server is running on port ${PORT}`);
     });
 } catch (error) {
-    console.error('MongoDB connection failed', error);
+    console.error('Mongoose connection failed', error);
     process.exit(1);
 }
