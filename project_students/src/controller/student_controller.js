@@ -54,7 +54,8 @@ export const addScore = async (req, res) => {
 };
 
 export const findStudentsByName = async (req, res) => {
-    const students = await service.findStudentsByName(req.params.name);
+    const page = req.query.page;
+    const students = await service.findStudentsByName(req.params.name, page);
     res.status(200).json(
         students.map(student => ({
             id: student.id,
@@ -71,7 +72,8 @@ export const countStudentsByNames = async (req, res) => {
 };
 
 export const findStudentsByMinScore = async (req, res) => {
-    const students = await service.findStudentsByMinScore(req.params.exam, req.params.minScore);
+    const page = req.query.page;
+    const students = await service.findStudentsByMinScore(req.params.exam, req.params.minScore, page);
     res.status(200).json(
         students.map(student => ({
             id: student.id,

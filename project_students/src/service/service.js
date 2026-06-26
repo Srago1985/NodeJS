@@ -38,8 +38,8 @@ export const addScore = async (id, exam, score) => {
     return student;
 }
 
-export const findStudentsByName = async (name) => {
-        return (await repo.findStudentsByName(name)).map(student => ({...student, password: undefined}));
+export const findStudentsByName = async (name, page = 1) => {
+    return (await repo.findStudentsByName(name, page)).map(student => ({...student, password: undefined}));
 }
 
 export const countStudentsByNames = async (names) => {
@@ -51,6 +51,6 @@ export const countStudentsByNames = async (names) => {
     return await repo.countStudentsByNames(normalized);
 }
 
-export const findStudentsByMinScore = async (exam, minScore) => {
-    return (await repo.findStudentsByMinScore(exam, +minScore)).map(student => ({...student, password: undefined}));
+export const findStudentsByMinScore = async (exam, minScore, page = 1) => {
+    return (await repo.findStudentsByMinScore(exam, +minScore, page)).map(student => ({...student, password: undefined}));
 }
