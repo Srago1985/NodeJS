@@ -1,4 +1,5 @@
 import * as service from '../service/service.js';
+import * as validator from '../validator/studentValidator.js';
 
 const notFound = (req) => ({
     timestamp: new Date().toISOString(),
@@ -9,6 +10,16 @@ const notFound = (req) => ({
 });
 
 export const addStudent = async (req, res) => {
+    const { error } = validator.studentSchema.validate(req.body);
+    if (error) {
+        return res.status(400).json({
+            timestamp: new Date().toISOString(),
+            status: 400,
+            error: 'Bad Request',
+            message: error.details.map(detail => detail.message).join(', '),
+            path: '/student'
+        });
+    }
     const success = await service.addStudent(req.body);
     if (success) {
         res.status(204).send();
@@ -36,6 +47,16 @@ export const deleteStudent = async (req, res) => {
 };
 
 export const updateStudent = async (req, res) => {
+    const { error } = validator.updateStudentSchema.validate(req.body);
+    if (error) {
+        return res.status(400).json({
+            timestamp: new Date().toISOString(),
+            status: 400,
+            error: 'Bad Request',
+            message: error.details.map(detail => detail.message).join(', '),
+            path: `/student/${req.params.id}`
+        });
+    }
     const student = await service.updateStudent(req.params.id, req.body);
     if (student) {
         res.status(200).json(student);
@@ -45,6 +66,16 @@ export const updateStudent = async (req, res) => {
 }
 
 export const addScore = async (req, res) => {
+    const { error } = validator.scoreSchema.validate(req.body);
+    if (error) {
+        return res.status(400).json({
+            timestamp: new Date().toISOString(),
+            status: 400,
+            error: 'Bad Request',
+            message: error.details.map(detail => detail.message).join(', '),
+            path: `/student/${req.params.id}/score`
+        });
+    }
     const success = await service.addScore(req.params.id, req.body.examName, req.body.score);
     if (success) {
         res.status(204).send();
