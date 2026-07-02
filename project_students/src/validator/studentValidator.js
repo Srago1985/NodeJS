@@ -16,6 +16,6 @@ export const updateStudentSchema = Joi.object({
 });
 
 export const scoreSchema = Joi.object({
-    exam: Joi.string().required(),
+    examName: Joi.string().required(),
     score: Joi.number().integer().min(0).max(100).required()
 });
