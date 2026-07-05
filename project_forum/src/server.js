@@ -44,6 +44,7 @@ export const startServer = async (port = PORT) => {
 	const app = createApp();
 	return app.listen(port, () => {
 		console.log(`Forum server is running on port ${port}`);
+        console.log(`Mongoose connected to database ${process.env.MONGODB_DB_NAME}`);
 	});
 };
 
