@@ -1,4 +1,10 @@
 **/node_modules/
 jsconfig.json
 package-lock.json
-project_students/.env
+# Never track environment files
+.env
+**/.env
+.env.*
+**/.env.*
+*.env
+**/*.env
