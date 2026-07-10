@@ -10,8 +10,11 @@ import {
     findPostsByPeriod,
     updatePost,
 } from '../controller/forum_controller.js';
+import { authenticateUser } from '../auth/auth_middleware.js';
 
 const router = Router();
+
+router.use(authenticateUser);
 
 router.post('/forum/post/:user', addPost);
 router.get('/forum/post/:postId', findPostById);
