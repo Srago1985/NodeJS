@@ -3,6 +3,7 @@ import dotenv from 'dotenv';
 import { fileURLToPath } from 'url';
 import path from 'path';
 import { connectToMongoose } from './db.mongoose.js';
+import accountRouter from './account/account_routes.js';
 import router from './routes/forum_routes.js';
 
 dotenv.config();
@@ -21,6 +22,7 @@ export const createApp = () => {
 	const app = express();
 
 	app.use(express.json());
+	app.use(accountRouter);
 	app.use(router);
 
 	app.use((errorObj, req, res, next) => {
