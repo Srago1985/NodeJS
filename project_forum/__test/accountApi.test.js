@@ -1,7 +1,9 @@
 import request from 'supertest';
-import { afterAll, beforeAll, describe, expect, test } from '@jest/globals';
+import { afterAll, beforeAll, beforeEach, describe, expect, test } from '@jest/globals';
 import { createApp } from '../src/server.js';
 import { closeMongooseConnection, connectToMongoose } from '../src/db.mongoose.js';
+import { resetAccountRepo } from '../src/account/account_repo.js';
+import AccountUserModel from '../src/model/mongoose_user.js';
 
 const app = createApp();
 
@@ -11,6 +13,10 @@ describe('Account API integration', () => {
     beforeAll(async () => {
         process.env.MONGODB_DB_NAME = process.env.MONGODB_DB_NAME || 'java63';
         await connectToMongoose();
+    });
+
+    beforeEach(async () => {
+        await resetAccountRepo();
     });
 
     afterAll(async () => {
@@ -57,6 +63,26 @@ describe('Account API integration', () => {
             .post('/account/login')
             .set('Authorization', basic('Apollo', 'wrong'));
         expect(unauthorized.status).toBe(401);
+    });
+
+    test('POST /account/login migrates legacy plaintext password to hash', async () => {
+        await AccountUserModel.collection.insertOne({
+            login: 'LegacyUser',
+            password: 'legacy123',
+            firstName: 'Legacy',
+            lastName: 'User',
+            roles: ['USER'],
+        });
+
+        const response = await request(app)
+            .post('/account/login')
+            .set('Authorization', basic('LegacyUser', 'legacy123'));
+
+        expect(response.status).toBe(200);
+
+        const migratedUser = await AccountUserModel.collection.findOne({ login: 'LegacyUser' });
+        expect(migratedUser.passwordHash).toEqual(expect.any(String));
+        expect(migratedUser.password).toBeUndefined();
     });
 
     test('PATCH /account/user/:user -> admin can update', async () => {

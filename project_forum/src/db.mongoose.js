@@ -1,6 +1,7 @@
 import mongoose from 'mongoose';
 import dotenv from 'dotenv';
 import ForumPostModel from './model/mongoose_post.js';
+import AccountUserModel from './model/mongoose_user.js';
 
 dotenv.config();
 
@@ -8,6 +9,7 @@ let isConnected = false;
 
 const ensureIndexes = async () => {
     await ForumPostModel.createIndexes();
+    await AccountUserModel.createIndexes();
 };
 
 export const connectToMongoose = async () => {

@@ -8,9 +8,9 @@ export const cloneUserProfile = (user) => ({
     roles: [...user.roles],
 });
 
-export const createUserRecord = ({ login, password, firstName, lastName, roles }) => ({
+export const createUserRecord = ({ login, passwordHash, firstName, lastName, roles }) => ({
     login,
-    password,
+    passwordHash,
     firstName,
     lastName,
     roles: [...roles],

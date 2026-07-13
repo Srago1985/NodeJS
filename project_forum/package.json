@@ -8,11 +8,16 @@
     "start": "node src/server.js",
     "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js"
   },
-  "keywords": ["posts", "likes", "comments"],
+  "keywords": [
+    "posts",
+    "likes",
+    "comments"
+  ],
   "author": "Srago",
   "license": "ISC",
   "type": "module",
   "dependencies": {
+    "bcryptjs": "^3.0.3",
     "cross-env": "^10.1.0",
     "express": "^4.22.2",
     "joi": "^18.2.3",
@@ -23,4 +28,5 @@
     "dotenv": "^17.4.2",
     "jest": "^30.4.2",
     "nodemon": "^3.1.14"
-}}
+  }
+}

@@ -1,124 +1,199 @@
-import { cloneUserProfile, createUserRecord, normalizeLogin, normalizeRole } from './account_model.js';
+import bcrypt from 'bcryptjs';
+import AccountUserModel from '../model/mongoose_user.js';
+import { cloneUserProfile, normalizeLogin, normalizeRole } from './account_model.js';
 
-const users = new Map();
+const PASSWORD_SALT_ROUNDS = 10;
 
-const seedUser = (userData) => {
-    const user = createUserRecord(userData);
-    users.set(normalizeLogin(user.login), user);
-};
-
-seedUser({
-    login: 'admin',
-    password: 'admin',
-    firstName: 'System',
-    lastName: 'Admin',
-    roles: ['ADMIN', 'USER'],
-});
-
-seedUser({
-    login: 'Apollo',
-    password: '1234',
-    firstName: 'John',
-    lastName: 'Smith',
-    roles: ['USER'],
-});
-
-seedUser({
-    login: 'JavaFan',
-    password: '1234',
-    firstName: 'John',
-    lastName: 'Smith',
-    roles: ['USER'],
-});
-
-export const findUserRecordByLogin = (login) => users.get(normalizeLogin(login)) || null;
-
-export const createUser = ({ login, password, firstName, lastName }) => {
-    const loginKey = normalizeLogin(login);
-    if (users.has(loginKey)) {
+const mapUserRecord = (user) => {
+    if (!user) {
         return null;
     }
 
-    const created = createUserRecord({
-        login,
-        password,
-        firstName,
-        lastName,
+    return {
+        login: user.login,
+        passwordHash: user.passwordHash || user.password || null,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        roles: [...(user.roles || [])],
+    };
+};
+
+const migrateLegacyPasswordIfNeeded = async (user) => {
+    if (!user || user.passwordHash || !user.password) {
+        return user;
+    }
+
+    const passwordHash = await bcrypt.hash(user.password, PASSWORD_SALT_ROUNDS);
+    await AccountUserModel.updateOne(
+        { _id: user._id },
+        { $set: { passwordHash }, $unset: { password: '' } }
+    );
+
+    return {
+        ...user,
+        passwordHash,
+        password: undefined,
+    };
+};
+
+const seedUsers = [
+    {
+        login: 'admin',
+        password: 'admin',
+        firstName: 'System',
+        lastName: 'Admin',
+        roles: ['ADMIN', 'USER'],
+    },
+    {
+        login: 'Apollo',
+        password: '1234',
+        firstName: 'John',
+        lastName: 'Smith',
+        roles: ['USER'],
+    },
+    {
+        login: 'JavaFan',
+        password: '1234',
+        firstName: 'John',
+        lastName: 'Smith',
+        roles: ['USER'],
+    },
+];
+
+export const seedAccountRepo = async () => {
+    const operations = await Promise.all(seedUsers.map(async (user) => ({
+        updateOne: {
+            filter: { login: user.login },
+            update: {
+                $set: {
+                    login: user.login,
+                    passwordHash: await bcrypt.hash(user.password, PASSWORD_SALT_ROUNDS),
+                    firstName: user.firstName,
+                    lastName: user.lastName,
+                    roles: user.roles,
+                },
+                $unset: { password: '' },
+            },
+            upsert: true,
+            collation: { locale: 'en', strength: 2 },
+        },
+    })));
+
+    await AccountUserModel.bulkWrite(operations, { ordered: true });
+};
+
+export const resetAccountRepo = async () => {
+    await AccountUserModel.deleteMany({});
+    await seedAccountRepo();
+};
+
+export const findUserRecordByLogin = async (login) => {
+    const user = await AccountUserModel.findOne({ login: String(login || '').trim() })
+        .collation({ locale: 'en', strength: 2 })
+        .lean();
+
+    const migratedUser = await migrateLegacyPasswordIfNeeded(user);
+
+    return mapUserRecord(migratedUser);
+};
+
+export const createUser = async ({ login, password, firstName, lastName }) => {
+    const existingUser = await findUserRecordByLogin(login);
+    if (existingUser) {
+        return null;
+    }
+
+    const passwordHash = await bcrypt.hash(password, PASSWORD_SALT_ROUNDS);
+
+    const created = await AccountUserModel.create({
+        login: String(login).trim(),
+        passwordHash,
+        firstName: String(firstName).trim(),
+        lastName: String(lastName).trim(),
         roles: ['USER'],
     });
 
-    users.set(loginKey, created);
-    return cloneUserProfile(created);
+    return cloneUserProfile(mapUserRecord(created.toObject()));
 };
 
-export const findUserProfileByLogin = (login) => {
-    const user = findUserRecordByLogin(login);
+export const findUserProfileByLogin = async (login) => {
+    const user = await findUserRecordByLogin(login);
     return user ? cloneUserProfile(user) : null;
 };
 
-export const updateUserProfile = (login, updates) => {
-    const user = findUserRecordByLogin(login);
-    if (!user) {
-        return null;
-    }
-
+export const updateUserProfile = async (login, updates) => {
+    const setDoc = {};
     if (Object.hasOwn(updates, 'firstName')) {
-        user.firstName = updates.firstName;
+        setDoc.firstName = updates.firstName;
     }
 
     if (Object.hasOwn(updates, 'lastName')) {
-        user.lastName = updates.lastName;
+        setDoc.lastName = updates.lastName;
     }
 
-    return cloneUserProfile(user);
+    const updated = await AccountUserModel.findOneAndUpdate(
+        { login: String(login || '').trim() },
+        { $set: setDoc },
+        { returnDocument: 'after', collation: { locale: 'en', strength: 2 } }
+    ).lean();
+
+    return updated ? cloneUserProfile(mapUserRecord(updated)) : null;
 };
 
-export const deleteUserByLogin = (login) => {
-    const loginKey = normalizeLogin(login);
-    const user = users.get(loginKey);
-    if (!user) {
-        return null;
-    }
+export const deleteUserByLogin = async (login) => {
+    const deleted = await AccountUserModel.findOneAndDelete({ login: String(login || '').trim() }, {
+        collation: { locale: 'en', strength: 2 },
+    }).lean();
 
-    users.delete(loginKey);
-    return cloneUserProfile(user);
+    return deleted ? cloneUserProfile(mapUserRecord(deleted)) : null;
 };
 
-export const addRoleToUser = (login, role) => {
-    const user = findUserRecordByLogin(login);
-    if (!user) {
-        return null;
-    }
-
-    const normalizedRole = normalizeRole(role);
-    if (!user.roles.some((existingRole) => normalizeRole(existingRole) === normalizedRole)) {
-        user.roles.push(normalizedRole);
-    }
-
-    return cloneUserProfile(user);
-};
-
-export const removeRoleFromUser = (login, role) => {
-    const user = findUserRecordByLogin(login);
+export const addRoleToUser = async (login, role) => {
+    const user = await findUserRecordByLogin(login);
     if (!user) {
         return null;
     }
 
     const normalizedRole = normalizeRole(role);
-    user.roles = user.roles.filter((existingRole) => normalizeRole(existingRole) !== normalizedRole);
-    if (!user.roles.length) {
-        user.roles = ['USER'];
-    }
+    const nextRoles = user.roles.some((existingRole) => normalizeRole(existingRole) === normalizedRole)
+        ? user.roles
+        : [...user.roles, normalizedRole];
 
-    return cloneUserProfile(user);
+    const updated = await AccountUserModel.findOneAndUpdate(
+        { login: String(login || '').trim() },
+        { $set: { roles: nextRoles } },
+        { returnDocument: 'after', collation: { locale: 'en', strength: 2 } }
+    ).lean();
+
+    return updated ? cloneUserProfile(mapUserRecord(updated)) : null;
 };
 
-export const updateUserPassword = (login, password) => {
-    const user = findUserRecordByLogin(login);
+export const removeRoleFromUser = async (login, role) => {
+    const user = await findUserRecordByLogin(login);
     if (!user) {
         return null;
     }
 
-    user.password = password;
-    return cloneUserProfile(user);
+    const normalizedRole = normalizeRole(role);
+    const nextRoles = user.roles.filter((existingRole) => normalizeRole(existingRole) !== normalizedRole);
+
+    const updated = await AccountUserModel.findOneAndUpdate(
+        { login: String(login || '').trim() },
+        { $set: { roles: nextRoles.length ? nextRoles : ['USER'] } },
+        { returnDocument: 'after', collation: { locale: 'en', strength: 2 } }
+    ).lean();
+
+    return updated ? cloneUserProfile(mapUserRecord(updated)) : null;
+};
+
+export const updateUserPassword = async (login, password) => {
+    const passwordHash = await bcrypt.hash(password, PASSWORD_SALT_ROUNDS);
+
+    const updated = await AccountUserModel.findOneAndUpdate(
+        { login: String(login || '').trim() },
+        { $set: { passwordHash }, $unset: { password: '' } },
+        { returnDocument: 'after', collation: { locale: 'en', strength: 2 } }
+    ).lean();
+
+    return updated ? cloneUserProfile(mapUserRecord(updated)) : null;
 };

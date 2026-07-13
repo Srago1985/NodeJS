@@ -1,3 +1,4 @@
+import bcrypt from 'bcryptjs';
 import {
     addRoleToUser,
     createUser,
@@ -44,8 +45,13 @@ export const authenticateUser = async (authorization) => {
         return null;
     }
 
-    const user = findUserRecordByLogin(credentials.login);
-    if (!user || user.password !== credentials.password) {
+    const user = await findUserRecordByLogin(credentials.login);
+    if (!user?.passwordHash) {
+        return null;
+    }
+
+    const passwordMatches = await bcrypt.compare(credentials.password, user.passwordHash);
+    if (!passwordMatches) {
         return null;
     }
 
@@ -58,8 +64,13 @@ export const findActor = async (authorization) => {
         return null;
     }
 
-    const user = findUserRecordByLogin(credentials.login);
-    if (!user || user.password !== credentials.password) {
+    const user = await findUserRecordByLogin(credentials.login);
+    if (!user?.passwordHash) {
+        return null;
+    }
+
+    const passwordMatches = await bcrypt.compare(credentials.password, user.passwordHash);
+    if (!passwordMatches) {
         return null;
     }
 
@@ -94,10 +105,15 @@ export const revokeRole = async (login, role) => {
 };
 
 export const changePassword = async (actor, oldPassword, newPassword) => {
-    if (!actor || !oldPassword || actor.password !== oldPassword || !newPassword) {
+    if (!actor?.passwordHash || !oldPassword || !newPassword) {
         return false;
     }
 
-    updateUserPassword(actor.login, newPassword);
+    const oldPasswordMatches = await bcrypt.compare(oldPassword, actor.passwordHash);
+    if (!oldPasswordMatches) {
+        return false;
+    }
+
+    await updateUserPassword(actor.login, newPassword);
     return true;
 };
