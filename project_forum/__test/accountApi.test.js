@@ -128,6 +128,19 @@ describe('Account API integration', () => {
         expect(userCall.status).toBe(403);
     });
 
+    test('PATCH /account/user/:user/role/:role -> 400 for role outside whitelist', async () => {
+        const login = `RoleBad${Date.now()}`;
+        await request(app)
+            .post('/account/register')
+            .send({ login, password: '1234', firstName: 'John', lastName: 'Smith' });
+
+        const response = await request(app)
+            .patch(`/account/user/${login}/role/editor`)
+            .set('Authorization', basic('admin', 'admin'));
+
+        expect(response.status).toBe(400);
+    });
+
     test('PATCH /account/password -> 204 on success, 401 on invalid old password', async () => {
         const login = `Pwd${Date.now()}`;
         await request(app)

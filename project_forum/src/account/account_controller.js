@@ -1,6 +1,6 @@
 import * as service from './account_service.js';
 import * as validator from './account_validator.js';
-import { normalizeRole } from './account_model.js';
+import { isAllowedRole } from './account_model.js';
 
 export const register = async (req, res) => {
     const { error, value } = validator.registerSchema.validate(req.body);
@@ -90,7 +90,7 @@ export const addRole = async (req, res) => {
         return res.sendStatus(403);
     }
 
-    if (!normalizeRole(req.params.role)) {
+    if (!isAllowedRole(req.params.role)) {
         return res.sendStatus(400);
     }
 
