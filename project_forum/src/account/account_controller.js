@@ -26,11 +26,6 @@ export const login = async (req, res) => {
 };
 
 export const getUser = async (req, res) => {
-    const actor = await service.findActor(req.get('authorization'));
-    if (!actor) {
-        return res.sendStatus(401);
-    }
-
     const target = await service.getUserByLogin(req.params.user);
     if (!target) {
         return res.sendStatus(404);
@@ -40,12 +35,7 @@ export const getUser = async (req, res) => {
 };
 
 export const updateUser = async (req, res) => {
-    const actor = await service.findActor(req.get('authorization'));
-    if (!actor) {
-        return res.sendStatus(401);
-    }
-
-    if (!service.canManageUser(actor, req.params.user)) {
+    if (!service.canManageUser(req.actor, req.params.user)) {
         return res.sendStatus(403);
     }
 
@@ -63,12 +53,7 @@ export const updateUser = async (req, res) => {
 };
 
 export const deleteUser = async (req, res) => {
-    const actor = await service.findActor(req.get('authorization'));
-    if (!actor) {
-        return res.sendStatus(401);
-    }
-
-    if (!service.canManageUser(actor, req.params.user)) {
+    if (!service.canManageUser(req.actor, req.params.user)) {
         return res.sendStatus(403);
     }
 
@@ -81,12 +66,7 @@ export const deleteUser = async (req, res) => {
 };
 
 export const addRole = async (req, res) => {
-    const actor = await service.findActor(req.get('authorization'));
-    if (!actor) {
-        return res.sendStatus(401);
-    }
-
-    if (!service.canManageRoles(actor)) {
+    if (!service.canManageRoles(req.actor)) {
         return res.sendStatus(403);
     }
 
@@ -103,12 +83,7 @@ export const addRole = async (req, res) => {
 };
 
 export const deleteRole = async (req, res) => {
-    const actor = await service.findActor(req.get('authorization'));
-    if (!actor) {
-        return res.sendStatus(401);
-    }
-
-    if (!service.canManageRoles(actor)) {
+    if (!service.canManageRoles(req.actor)) {
         return res.sendStatus(403);
     }
 
@@ -125,17 +100,12 @@ export const deleteRole = async (req, res) => {
 };
 
 export const updatePassword = async (req, res) => {
-    const actor = await service.findActor(req.get('authorization'));
-    if (!actor) {
-        return res.sendStatus(401);
-    }
-
     const { error, value } = validator.changePasswordSchema.validate(req.body);
     if (error) {
         return res.sendStatus(400);
     }
 
-    const changed = await service.changePassword(actor, req.get('x-password'), value.password);
+    const changed = await service.changePassword(req.actor, req.get('x-password'), value.password);
     if (!changed) {
         return res.sendStatus(401);
     }

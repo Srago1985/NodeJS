@@ -9,11 +9,15 @@ import {
     updatePassword,
     updateUser,
 } from './account_controller.js';
+import { requireAccountActor } from './account_auth_middleware.js';
 
 const router = Router();
 
 router.post('/account/register', register);
 router.post('/account/login', login);
+
+router.use('/account', requireAccountActor);
+
 router.get('/account/user/:user', getUser);
 router.patch('/account/user/:user', updateUser);
 router.delete('/account/user/:user', deleteUser);
