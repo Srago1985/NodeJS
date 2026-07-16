@@ -89,6 +89,11 @@ export const findPostById = async (postId) => {
     return mapPost(post);
 };
 
+export const findPosts = async () => {
+    const posts = await ForumPostModel.find({}).lean();
+    return posts.map(mapPost);
+};
+
 export const incrementPostLikes = async (postId) => {
     const objectId = toObjectIdOrNull(postId);
     if (!objectId) {

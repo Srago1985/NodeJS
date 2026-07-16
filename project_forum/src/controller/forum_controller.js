@@ -17,7 +17,22 @@ const makePostNotFound = (req) => ({
     path: `/forum/post/${req.params.postId}`,
 });
 
+const makeForbidden = (path, message) => ({
+    timestamp: new Date().toISOString(),
+    status: 403,
+    error: 'Forbidden',
+    message,
+    path,
+});
+
+const hasRole = (user, role) => (user?.roles || []).some((entry) => String(entry).toUpperCase() === String(role).toUpperCase());
+const isSameLogin = (authLogin, routeLogin) => String(authLogin || '').trim().toLowerCase() === String(routeLogin || '').trim().toLowerCase();
+
 export const addPost = async (req, res) => {
+    if (!isSameLogin(req.authUser?.login, req.params.user)) {
+        return res.status(403).json(makeForbidden(`/forum/post/${req.params.user}`, 'Authenticated user must match author in path'));
+    }
+
     const { error } = validator.createPostSchema.validate(req.body);
     if (error) {
         return res.status(400).json(makeBadRequest(`/forum/post/${req.params.user}`, error.details.map((d) => d.message).join(', ')));
@@ -50,7 +65,16 @@ export const findPostsByAuthor = async (req, res) => {
     return res.status(200).json(posts);
 };
 
+export const findPosts = async (req, res) => {
+    const posts = await service.findPosts();
+    return res.status(200).json(posts);
+};
+
 export const addComment = async (req, res) => {
+    if (!isSameLogin(req.authUser?.login, req.params.commenter)) {
+        return res.status(403).json(makeForbidden(`/forum/post/${req.params.postId}/comment/${req.params.commenter}`, 'Authenticated user must match comment author in path'));
+    }
+
     const { error } = validator.addCommentSchema.validate(req.body);
     if (error) {
         return res.status(400).json(makeBadRequest(`/forum/post/${req.params.postId}/comment/${req.params.commenter}`, error.details.map((d) => d.message).join(', ')));
@@ -65,6 +89,17 @@ export const addComment = async (req, res) => {
 };
 
 export const deletePost = async (req, res) => {
+    const post = await service.findPostById(req.params.postId);
+    if (!post) {
+        return res.status(404).json(makePostNotFound(req));
+    }
+
+    const isOwner = isSameLogin(req.authUser?.login, post.author);
+    const isModerator = hasRole(req.authUser, 'MODERATOR');
+    if (!isOwner && !isModerator) {
+        return res.status(403).json(makeForbidden(`/forum/post/${req.params.postId}`, 'Only owner or MODERATOR can delete post'));
+    }
+
     const deleted = await service.deletePost(req.params.postId);
     if (!deleted) {
         return res.status(404).json(makePostNotFound(req));
@@ -94,6 +129,15 @@ export const findPostsByPeriod = async (req, res) => {
 };
 
 export const updatePost = async (req, res) => {
+    const post = await service.findPostById(req.params.postId);
+    if (!post) {
+        return res.status(404).json(makePostNotFound(req));
+    }
+
+    if (!isSameLogin(req.authUser?.login, post.author)) {
+        return res.status(403).json(makeForbidden(`/forum/post/${req.params.postId}`, 'Only owner can update post'));
+    }
+
     const { error } = validator.updatePostSchema.validate(req.body);
     if (error) {
         return res.status(400).json(makeBadRequest(`/forum/post/${req.params.postId}`, error.details.map((d) => d.message).join(', ')));

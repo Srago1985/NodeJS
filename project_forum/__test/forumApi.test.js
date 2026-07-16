@@ -8,6 +8,7 @@ const AUTH_HEADERS = {
     Apollo: 'Basic QXBvbGxvOjEyMzQ=',
     Another: 'Basic QW5vdGhlcjoyMzQ1',
     Stranger: 'Basic U3RyYW5nZXI6MTIzNA==',
+    Moderator: 'Basic TW9kZXJhdG9yOjEyMzQ=',
 };
 
 const originalFetch = global.fetch;
@@ -68,7 +69,7 @@ describe('Forum API contract integration', () => {
                     login,
                     firstName: 'John',
                     lastName: 'Smith',
-                    roles: ['USER'],
+                    roles: login === 'Moderator' ? ['MODERATOR'] : ['USER'],
                 }),
             };
         });
@@ -104,6 +105,13 @@ describe('Forum API contract integration', () => {
                 comments: [],
             })
         );
+    });
+
+    test('POST /forum/post/:user returns 403 when login does not match author', async () => {
+        const response = await post('/forum/post/Another', 'Apollo')
+            .send(buildPostPayload());
+
+        expectErrorShape(response, 403, 'Forbidden', '/forum/post/Another', 'must match author');
     });
 
     test('POST /forum/post/:user invalid body returns 400', async () => {
@@ -176,6 +184,16 @@ describe('Forum API contract integration', () => {
         );
     });
 
+    test('PATCH /forum/post/:postId/comment/:commenter returns 403 when login mismatch', async () => {
+        const created = await post('/forum/post/Apollo')
+            .send(buildPostPayload());
+
+        const response = await patch(`/forum/post/${created.body.id}/comment/Another`, 'Stranger')
+            .send({ message: 'Mismatch' });
+
+        expectErrorShape(response, 403, 'Forbidden', `/forum/post/${created.body.id}/comment/Another`, 'must match comment author');
+    });
+
     test('PATCH /forum/post/:postId/comment/:commenter invalid body returns 400', async () => {
         const created = await post('/forum/post/Apollo')
             .send(buildPostPayload());
@@ -201,6 +219,24 @@ describe('Forum API contract integration', () => {
 
         expect(response.status).toBe(200);
         expect(response.body.id).toBe(created.body.id);
+    });
+
+    test('DELETE /forum/post/:postId returns 403 for non-owner non-moderator', async () => {
+        const created = await post('/forum/post/Apollo')
+            .send(buildPostPayload());
+
+        const response = await del(`/forum/post/${created.body.id}`, 'Stranger');
+
+        expectErrorShape(response, 403, 'Forbidden', `/forum/post/${created.body.id}`, 'owner or MODERATOR');
+    });
+
+    test('DELETE /forum/post/:postId allows moderator', async () => {
+        const created = await post('/forum/post/Apollo')
+            .send(buildPostPayload());
+
+        const response = await del(`/forum/post/${created.body.id}`, 'Moderator');
+
+        expect(response.status).toBe(200);
     });
 
     test('DELETE /forum/post/:postId unknown id returns 404', async () => {
@@ -254,6 +290,16 @@ describe('Forum API contract integration', () => {
         expect(response.body.tags).toEqual(expect.arrayContaining(['Java', 'Jakarta EE', 'J2EE']));
     });
 
+    test('PATCH /forum/post/:postId returns 403 for non-owner', async () => {
+        const created = await post('/forum/post/Apollo')
+            .send(buildPostPayload());
+
+        const response = await patch(`/forum/post/${created.body.id}`, 'Another')
+            .send({ title: 'Hijack' });
+
+        expectErrorShape(response, 403, 'Forbidden', `/forum/post/${created.body.id}`, 'Only owner can update post');
+    });
+
     test('PATCH /forum/post/:postId invalid payload returns 400', async () => {
         const created = await post('/forum/post/Apollo')
             .send(buildPostPayload());
@@ -275,5 +321,14 @@ describe('Forum API contract integration', () => {
         const response = await get('/forum/unknown');
 
         expectErrorShape(response, 404, 'Not Found', '/forum/unknown', 'Route GET /forum/unknown not found');
+    });
+
+    test('GET /forum/posts is permit all (200)', async () => {
+        await post('/forum/post/Apollo').send(buildPostPayload());
+
+        const response = await request(app).get('/forum/posts');
+
+        expect(response.status).toBe(200);
+        expect(response.body).toHaveLength(1);
     });
 });

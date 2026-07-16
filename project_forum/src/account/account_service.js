@@ -79,7 +79,15 @@ export const findActor = async (authorization) => {
 
 export const getUserByLogin = async (login) => findUserProfileByLogin(login);
 
-export const canManageUser = (actor, targetLogin) => {
+export const canUpdateUser = (actor, targetLogin) => {
+    if (!actor) {
+        return false;
+    }
+
+    return normalizeLogin(actor.login) === normalizeLogin(targetLogin);
+};
+
+export const canDeleteUser = (actor, targetLogin) => {
     if (!actor) {
         return false;
     }

@@ -85,14 +85,23 @@ describe('Account API integration', () => {
         expect(migratedUser.password).toBeUndefined();
     });
 
-    test('PATCH /account/user/:user -> admin can update', async () => {
+    test('PATCH /account/user/:user -> owner can update', async () => {
         const response = await request(app)
             .patch('/account/user/Apollo')
-            .set('Authorization', basic('admin', 'admin'))
+            .set('Authorization', basic('Apollo', '1234'))
             .send({ firstName: 'Peter' });
 
         expect(response.status).toBe(200);
         expect(response.body.firstName).toBe('Peter');
+    });
+
+    test('PATCH /account/user/:user -> admin gets 403 when not owner', async () => {
+        const response = await request(app)
+            .patch('/account/user/Apollo')
+            .set('Authorization', basic('admin', 'admin'))
+            .send({ firstName: 'Hack' });
+
+        expect(response.status).toBe(403);
     });
 
     test('PATCH /account/user/:user -> non-owner non-admin gets 403', async () => {
@@ -106,6 +115,28 @@ describe('Account API integration', () => {
             .send({ firstName: 'Hack' });
 
         expect(response.status).toBe(403);
+    });
+
+    test('DELETE /account/user/:user -> owner or admin can delete', async () => {
+        const ownerLogin = `Own${Date.now()}`;
+        await request(app)
+            .post('/account/register')
+            .send({ login: ownerLogin, password: '1234', firstName: 'John', lastName: 'Smith' });
+
+        const ownerDelete = await request(app)
+            .delete(`/account/user/${ownerLogin}`)
+            .set('Authorization', basic(ownerLogin, '1234'));
+        expect(ownerDelete.status).toBe(200);
+
+        const targetLogin = `AdmDel${Date.now()}`;
+        await request(app)
+            .post('/account/register')
+            .send({ login: targetLogin, password: '1234', firstName: 'John', lastName: 'Smith' });
+
+        const adminDelete = await request(app)
+            .delete(`/account/user/${targetLogin}`)
+            .set('Authorization', basic('admin', 'admin'));
+        expect(adminDelete.status).toBe(200);
     });
 
     test('PATCH /account/user/:user/role/:role -> 200 for admin, 403 for non-admin', async () => {

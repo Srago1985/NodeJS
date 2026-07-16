@@ -35,7 +35,7 @@ export const getUser = async (req, res) => {
 };
 
 export const updateUser = async (req, res) => {
-    if (!service.canManageUser(req.actor, req.params.user)) {
+    if (!service.canUpdateUser(req.actor, req.params.user)) {
         return res.sendStatus(403);
     }
 
@@ -53,7 +53,7 @@ export const updateUser = async (req, res) => {
 };
 
 export const deleteUser = async (req, res) => {
-    if (!service.canManageUser(req.actor, req.params.user)) {
+    if (!service.canDeleteUser(req.actor, req.params.user)) {
         return res.sendStatus(403);
     }
 

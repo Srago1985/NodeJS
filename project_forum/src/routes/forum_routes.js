@@ -2,6 +2,7 @@ import { Router } from 'express';
 import {
     addPost,
     findPostById,
+    findPosts,
     addLike,
     findPostsByAuthor,
     addComment,
@@ -14,16 +15,16 @@ import { authenticateUser } from '../auth/auth_middleware.js';
 
 const router = Router();
 
-router.use(authenticateUser);
+router.get('/forum/posts', findPosts);
 
-router.post('/forum/post/:user', addPost);
-router.get('/forum/post/:postId', findPostById);
-router.patch('/forum/post/:postId/like', addLike);
-router.get('/forum/posts/author/:user', findPostsByAuthor);
-router.patch('/forum/post/:postId/comment/:commenter', addComment);
-router.delete('/forum/post/:postId', deletePost);
-router.get('/forum/posts/tags', findPostsByTags);
-router.get('/forum/posts/period', findPostsByPeriod);
-router.patch('/forum/post/:postId', updatePost);
+router.post('/forum/post/:user', authenticateUser, addPost);
+router.get('/forum/post/:postId', authenticateUser, findPostById);
+router.patch('/forum/post/:postId/like', authenticateUser, addLike);
+router.get('/forum/posts/author/:user', authenticateUser, findPostsByAuthor);
+router.patch('/forum/post/:postId/comment/:commenter', authenticateUser, addComment);
+router.delete('/forum/post/:postId', authenticateUser, deletePost);
+router.get('/forum/posts/tags', authenticateUser, findPostsByTags);
+router.get('/forum/posts/period', authenticateUser, findPostsByPeriod);
+router.patch('/forum/post/:postId', authenticateUser, updatePost);
 
 export default router;

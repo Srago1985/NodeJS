@@ -4,6 +4,8 @@ export const addPost = async (author, postData) => repo.createPost(author, postD
 
 export const findPostById = async (postId) => repo.findPostById(postId);
 
+export const findPosts = async () => repo.findPosts();
+
 export const addLike = async (postId) => repo.incrementPostLikes(postId);
 
 export const findPostsByAuthor = async (author) => repo.findPostsByAuthor(author);
