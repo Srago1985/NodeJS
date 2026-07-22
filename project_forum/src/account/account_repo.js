@@ -60,6 +60,30 @@ const seedUsers = [
     },
 ];
 
+const buildServiceAdmin = async () => ({
+    login: 'admin',
+    passwordHash: await bcrypt.hash('admin', PASSWORD_SALT_ROUNDS),
+    firstName: 'System',
+    lastName: 'Admin',
+    roles: ['ADMIN', 'USER'],
+});
+
+export const ensureServiceAdminAccount = async () => {
+    const serviceAdmin = await buildServiceAdmin();
+
+    await AccountUserModel.updateOne(
+        { login: serviceAdmin.login },
+        {
+            $setOnInsert: serviceAdmin,
+            $unset: { password: '' },
+        },
+        {
+            upsert: true,
+            collation: { locale: 'en', strength: 2 },
+        }
+    );
+};
+
 export const seedAccountRepo = async () => {
     const operations = await Promise.all(seedUsers.map(async (user) => ({
         updateOne: {

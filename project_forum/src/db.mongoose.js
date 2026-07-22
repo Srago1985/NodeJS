@@ -2,6 +2,7 @@ import mongoose from 'mongoose';
 import dotenv from 'dotenv';
 import ForumPostModel from './model/mongoose_post.js';
 import AccountUserModel from './model/mongoose_user.js';
+import { ensureServiceAdminAccount } from './account/account_repo.js';
 
 dotenv.config();
 
@@ -27,6 +28,7 @@ export const connectToMongoose = async () => {
     await mongoose.connect(uri, { dbName });
     isConnected = true;
     await ensureIndexes();
+    await ensureServiceAdminAccount();
 
     return mongoose.connection;
 };

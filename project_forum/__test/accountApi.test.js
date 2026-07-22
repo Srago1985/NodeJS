@@ -159,6 +159,23 @@ describe('Account API integration', () => {
         expect(userCall.status).toBe(403);
     });
 
+    test('DELETE /account/user/:user/role/:role -> 403 for non-admin', async () => {
+        const login = `RoleDel${Date.now()}`;
+        await request(app)
+            .post('/account/register')
+            .send({ login, password: '1234', firstName: 'John', lastName: 'Smith' });
+
+        await request(app)
+            .patch(`/account/user/${login}/role/moderator`)
+            .set('Authorization', basic('admin', 'admin'));
+
+        const response = await request(app)
+            .delete(`/account/user/${login}/role/moderator`)
+            .set('Authorization', basic('Apollo', '1234'));
+
+        expect(response.status).toBe(403);
+    });
+
     test('PATCH /account/user/:user/role/:role -> 400 for role outside whitelist', async () => {
         const login = `RoleBad${Date.now()}`;
         await request(app)
